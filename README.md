@@ -22,6 +22,7 @@ Most MCP clients are Node or Python libraries. mcp-lite lets a plain web page ta
 - Reads a tool's `_meta.ui.resourceUri`, fetches the `ui://` resource with `resources/read`, and checks it is `text/html;profile=mcp-app`.
 - Renders it in an iframe sandboxed with `allow-scripts` only.
 - Implements the postMessage side of the protocol: answers `ui/initialize`, sends `ui/notifications/tool-input` and `ui/notifications/tool-result`, resizes on `ui/notifications/size-changed`, and opens only http(s) links on `ui/open-link`.
+- Lets the page handle app-specific traffic: `onRequest(method, params)` answers requests the app sends (return a promise), `onNotification(method, params)` receives its notifications, `frame.notify(method, params)` sends it notifications, and `frame.ready` settles once the app has the tool result. DocDesk uses this so its card can ask the host to read each step of a guided walkthrough aloud.
 
 ## Use
 
@@ -37,7 +38,10 @@ Most MCP clients are Node or Python libraries. mcp-lite lets a plain web page ta
   await client.connect();
   const tools = await client.listTools();
   const result = await client.callTool("ask_support", { question: "How do I restart my router?" });
-  await McpAppsHost.renderApp(client, tools.find((t) => t.name === "ask_support"), {}, result, document.body);
+  const frame = await McpAppsHost.renderApp(client, tools.find((t) => t.name === "ask_support"), {}, result, document.body, {
+    onRequest: (method, params) => method === "docdesk/speak" ? speakAloud(params.text) : undefined,
+    onNotification: (method) => console.log("app says", method),
+  });
 </script>
 ```
 
