@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mcp-lite example</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 760px; margin: 32px auto; padding: 0 16px; }
+  input, textarea, select, button { font: inherit; }
+  input, textarea { width: 100%; padding: 6px 8px; box-sizing: border-box; }
+  pre { background: #f3f5f7; padding: 12px; overflow: auto; }
+  #card iframe { width: 100%; border: 1px solid #ddd; border-radius: 10px; }
+</style>
+</head>
+<body>
+<h1>mcp-lite</h1>
+<p>Connect to a Streamable HTTP MCP server, list its tools and call one. Serve this page from the same origin as the server, or enable CORS on the server.</p>
+<label>Server URL <input id="url" value="/mcp"></label>
+<p><button id="connect">Connect</button></p>
+<label>Tool <select id="tool"></select></label>
+<label>Arguments (JSON) <textarea id="args" rows="3">{}</textarea></label>
+<p><button id="call">Call tool</button></p>
+<div id="card"></div>
+<pre id="out"></pre>
+<script src="../src/mcp-lite.js"></script>
+<script src="../src/apps-host.js"></script>
+<script>
+  var client, tools = [];
+  var out = document.getElementById("out");
+  function log(x) { out.textContent = JSON.stringify(x, null, 2); }
+  document.getElementById("connect").onclick = async function () {
+    try {
+      client = new McpClient(document.getElementById("url").value, {
+        capabilities: { extensions: { "io.modelcontextprotocol/ui": { mimeTypes: [McpAppsHost.APP_MIME] } } },
+      });
+      var init = await client.connect();
+      tools = await client.listTools();
+      var select = document.getElementById("tool");
+      select.innerHTML = "";
+      tools.forEach(function (t) { var o = document.createElement("option"); o.textContent = t.name; select.appendChild(o); });
+      log({ server: init.serverInfo, protocolVersion: init.protocolVersion, tools: tools.map(function (t) { return t.name; }) });
+    } catch (e) { log({ error: String(e.message || e) }); }
+  };
+  document.getElementById("call").onclick = async function () {
+    try {
+      var name = document.getElementById("tool").value;
+      var args = JSON.parse(document.getElementById("args").value || "{}");
+      var result = await client.callTool(name, args);
+      log(result);
+      var card = document.getElementById("card");
+      card.innerHTML = "";
+      await McpAppsHost.renderApp(client, tools.filter(function (t) { return t.name === name; })[0], args, result, card);
+    } catch (e) { log({ error: String(e.message || e) }); }
+  };
+</script>
+</body>
+</html>

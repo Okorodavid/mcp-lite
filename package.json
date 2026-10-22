@@ -1,0 +1,11 @@
+{
+  "name": "mcp-lite",
+  "version": "1.0.0",
+  "description": "Dependency-free MCP client for the browser over Streamable HTTP, plus a minimal MCP Apps host.",
+  "main": "src/mcp-lite.js",
+  "files": ["src"],
+  "scripts": { "test": "node --test test/client.test.js" },
+  "keywords": ["mcp", "model-context-protocol", "streamable-http", "mcp-apps", "browser"],
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}
